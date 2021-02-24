@@ -1,0 +1,96 @@
+#!/usr/bin/env Rscript
+
+library(httr)
+library(DataQualityDashboard)
+
+# Get passed environment variables.
+env_var_names <- list("SOURCE",
+                      "DB_URI",
+                      "CDM_SCHEMA",
+                      "RES_SCHEMA",
+                      "VERBOSE",
+                      "NUM_THREADS")
+env_vars <- Sys.getenv(env_var_names, unset=NA)
+
+# Replace unset environement variables with defaults.
+default_vars <- list("N/A",
+                     "postgresql://postgres:postgres@postgresql:5432/ohdsi",
+                     "public",
+                     "public",
+                     "FALSE",
+                     "1")
+
+env_vars[is.na(env_vars)] <- default_vars[is.na(env_vars)]
+
+db_conf <- parse_url(env_vars$DB_URI)
+
+# fill out the connection details -----------------------------------------------------------------------
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = db_conf$scheme,
+                                                              user = db_conf$username,
+                                                              password = db_conf$password,
+                                                              server = paste(db_conf$hostname, db_conf$path, sep="/"),
+                                                              port = db_conf$port)
+
+cdmDatabaseSchema <- env_vars$CDM_SCHEMA # the fully qualified database schema name of the CDM
+resultsDatabaseSchema <- env_vars$RES_SCHEMA # the fully qualified database schema name of the results schema (that you can write to)
+cdmSourceName <- env_vars$SOURCE # a human readable name for your CDM source
+
+# determine how many threads (concurrent SQL sessions) to use ----------------------------------------
+numThreads <- as.numeric(env_vars$NUM_THREADS) # on Redshift, 3 seems to work well
+
+# specify if you want to execute the queries or inspect them ------------------------------------------
+sqlOnly <- FALSE # set to TRUE if you just want to get the SQL scripts and not actually run the queries
+
+# where should the logs go? -------------------------------------------------------------------------
+outputFolder <- "/output"
+
+# logging type -------------------------------------------------------------------------------------
+verboseMode <- as.logical(env_vars$VERBOSE) # set to TRUE if you want to see activity written to the console
+
+# write results to table? ------------------------------------------------------------------------------
+writeToTable <- TRUE # set to FALSE if you want to skip writing to a SQL table in the results schema
+
+# if writing to table and using Redshift, bulk loading can be initialized -------------------------------
+
+# Sys.setenv("AWS_ACCESS_KEY_ID" = "",
+#            "AWS_SECRET_ACCESS_KEY" = "",
+#            "AWS_DEFAULT_REGION" = "",
+#            "AWS_BUCKET_NAME" = "",
+#            "AWS_OBJECT_KEY" = "",
+#            "AWS_SSE_TYPE" = "AES256",
+#            "USE_MPP_BULK_LOAD" = TRUE)
+
+# which DQ check levels to run -------------------------------------------------------------------
+checkLevels <- c("TABLE", "FIELD", "CONCEPT")
+
+# which DQ checks to run? ------------------------------------
+
+checkNames <- c() # Names can be found in inst/csv/OMOP_CDM_v5.3.1_Check_Desciptions.csv
+
+# which CDM tables to exclude? ------------------------------------
+
+tablesToExclude <- c() 
+
+# run the job --------------------------------------------------------------------------------------
+DataQualityDashboard::executeDqChecks(connectionDetails = connectionDetails, 
+                                    cdmDatabaseSchema = cdmDatabaseSchema, 
+                                    resultsDatabaseSchema = resultsDatabaseSchema,
+                                    cdmSourceName = cdmSourceName, 
+                                    numThreads = numThreads,
+                                    sqlOnly = sqlOnly, 
+                                    outputFolder = outputFolder, 
+                                    verboseMode = verboseMode,
+                                    writeToTable = writeToTable,
+                                    checkLevels = checkLevels,
+                                    tablesToExclude = tablesToExclude,
+                                    checkNames = checkNames)
+
+current_datetime <- strftime(Sys.time(), format="%Y-%m-%dT%H.%M.%S")
+
+# (OPTIONAL) if you want to write the JSON file to the results table separately -----------------------------
+jsonFilePath <- file.path(outputFolder, cdmSourceName, sprintf("dqd_results_%s.json", current_datetime))
+DataQualityDashboard::writeJsonResultsToTable(connectionDetails = connectionDetails, 
+                                            resultsDatabaseSchema = resultsDatabaseSchema, 
+                                            jsonFilePath = jsonFilePath)
+
+DataQualityDashboard::viewDqDashboard(jsonPath = jsonFilePath)

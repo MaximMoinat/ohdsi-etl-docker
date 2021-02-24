@@ -1,0 +1,32 @@
+#!/bin/bash
+set -e
+cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+
+if [ ! -f ./.env ]; then
+  echo ".env configuration should be set"
+  exit 1
+fi
+
+if [ ! -e data/vocabulary/vocab.zip ]; then
+  echo "Add zipped vocabulary files to data/vocabulary"
+  echo
+  exit 1
+fi
+
+. lib/util.sh
+
+echo "=== BUILDING DOCKER IMAGES ==="
+docker-compose -f docker-compose.yml -f docker-compose.scripts.yml build
+
+echo "=== WAITING FOR POSTGRES ==="
+docker-compose up -d postgresql
+psql_wait_ready
+
+docker-compose up -d
+
+if ! psql_table_exists vocab concept; then
+  echo "=== LOADING VOCABULARY ==="
+  bin/run-sql src/sql/load_vocabulary.sql
+else
+  echo "=== VOCABULARY ALREADY LOADED ==="
+fi
