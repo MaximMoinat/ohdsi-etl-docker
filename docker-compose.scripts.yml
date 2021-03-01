@@ -21,9 +21,15 @@ services:
       - ACHILLES_SOURCE="Synthea"
 
   dqd:
-    image: thehyve/dqd
+    image: thehyve/r-script
     build:
-      context: images/dqd
+      context: images/r-script
+    ports:
+      - "8090:8090"
+    volumes:
+      - "./data/dqd:/output"
+      - "./src/r:/scripts"
+    working_dir: /scripts
     environment:
       - DB_URI=postgresql://postgres:${POSTGRESQL_PASSWORD}@postgresql/ohdsi
       - CDM_SCHEMA=etl
@@ -31,8 +37,27 @@ services:
       - SOURCE=OHDSI-ETL
       - VERBOSE=TRUE
       - NUM_THREADS=1
+    command: ["/usr/bin/dqd"]
+
+  etl-synthea:
+    image: thehyve/ohdsi-etl-synthea:5.3.1
+    depends_on:
+      - postgresql
     volumes:
-      - "./data/dqd:/output"
+      - synthea_data:/data/synthea
+    environment:
+      - SYNTHEA_DB_URI=postgresql://postgres:${POSTGRESQL_PASSWORD}@postgresql/ohdsi
+      - SYNTHEA_VOCAB_SCHEMA=vocab
+
+  synthea:
+    image: thehyve/synthea:2.6.1
+    build:
+      context: images/synthea
+      args:
+        SYNTHEA_VERSION: "2.6.1"
+    volumes:
+      - synthea_data:/code/output
+    command: ["/code/run_synthea"]
 
   notebook:
     image: thehyve/ohdsi-jupyter-notebook

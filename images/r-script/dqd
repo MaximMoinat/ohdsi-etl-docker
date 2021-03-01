@@ -2,6 +2,7 @@
 
 library(httr)
 library(DataQualityDashboard)
+library(shiny)
 
 # Get passed environment variables.
 env_var_names <- list("SOURCE",
@@ -85,12 +86,6 @@ DataQualityDashboard::executeDqChecks(connectionDetails = connectionDetails,
                                     tablesToExclude = tablesToExclude,
                                     checkNames = checkNames)
 
-current_datetime <- strftime(Sys.time(), format="%Y-%m-%dT%H.%M.%S")
-
-# (OPTIONAL) if you want to write the JSON file to the results table separately -----------------------------
-jsonFilePath <- file.path(outputFolder, cdmSourceName, sprintf("dqd_results_%s.json", current_datetime))
-DataQualityDashboard::writeJsonResultsToTable(connectionDetails = connectionDetails, 
-                                            resultsDatabaseSchema = resultsDatabaseSchema, 
-                                            jsonFilePath = jsonFilePath)
-
-DataQualityDashboard::viewDqDashboard(jsonPath = jsonFilePath)
+Sys.setenv(jsonPath = file.path(outputFolder, cdmSourceName, sprintf("results_%s.json", cdmSourceName)))
+appDir <- system.file("shinyApps", package = "DataQualityDashboard")
+shiny::runApp(appDir = appDir, display.mode = "normal", launch.browser = FALSE, port = 8090, host = "0.0.0.0")

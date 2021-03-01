@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e
+cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 <cdm_name> <raw_schema> [<synthea options>]"
+  exit 1
+fi
+
+export CDM_NAME="$1"
+export RAW_SCHEMA="$2"
+export CDM_SCHEMA="cdm_${RAW_SCHEMA}"
+export RESULTS_SCHEMA="cdm_${RAW_SCHEMA}_results"
+export SOURCE_LIST=${SOURCE_LIST:-data/sources.csv}
+
+# Remove schema parameters
+shift 2
+
+echo "Loading Synthea data '$CDM_NAME' to schema '$CDM_SCHEMA'."
+echo "Raw data will be located in schema '$RAW_SCHEMA' and results in '$RESULTS_SCHEMA'"
+
+bin/generate-synthea "$@"
+
+echo "=== LOADING SYNTHEA ==="
+bin/run-sql src/sql/reset_source_schemas.sql
+bin/run-script \
+  -e SYNTHEA_CDM_SCHEMA="$CDM_SCHEMA" \
+  -e SYNTHEA_RAW_SCHEMA="$RAW_SCHEMA" \
+  etl-synthea
