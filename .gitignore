@@ -1,3 +1,2 @@
-data/vocabulary/*.zip
-data/vocabulary/*.csv
-data/dqd/**
+data
+.env

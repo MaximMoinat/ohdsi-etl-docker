@@ -1,9 +1,8 @@
 FROM thehyve/ohdsi-r-base:3.6.3
 
-RUN install.r \
-    shiny \
-  && installGithub.r \
-    OHDSI/DatabaseConnector \
+ARG GITHUB_PAT
+
+RUN installGithub.r \
     OHDSI/ROhdsiWebApi \
     EHDEN/CatalogueExport \
     EHDEN/CdmInspection \
