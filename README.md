@@ -14,6 +14,10 @@ This will contain the following Docker containers:
 
 ## Usage
 
+First, copy `env.template` to `.env` and fill in the necessary variables. Also add a `vocab.zip` to `data/vocabulary`.
+
+Now you can run `docker-compose up -d` to start the stack. Jupyterhub will be available on port 8080, with any user name and password `JUPYTER_PASSWORD` from `.env`. Postgresql will be available on port 5432 with user `postgres` and password `POSTGRESQL_PASSWORD` from `.env`.
+
 ### Scripts
 
 To _run your ETL_, specify the ETL docker image in `.env` in the `ETL_IMAGE` variable. Then run
