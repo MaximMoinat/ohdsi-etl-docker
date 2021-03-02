@@ -48,12 +48,18 @@ bin/run-script r-script r /scripts/myscript.R
 ```
 
 Any data put in the `/output` folder is put in `./data/r-script`.
-Other helper scritps in the `bin/` directory have the following purpose:
+
+To _export the result of your ETL_, run
+```
+bin/pg_dump --schema=myschema
+```
+The result will be stored in `data/etl.dump.gz`.
+
+_Other helper scripts_ in the `bin/` directory have the following purpose:
 - `generate-results <CDM name> <raw schema name>` lets you generate the results table and schema of a given source.
 - `run-script` lets you run one of the scripts in the `docker-compose.scripts.yml` file. Examples: `bin/run-script synthea` generates a Synthea dataset, `bin/run-script r-script r /scripts/myscript.R` runs your own script in `src/r/myscript.R`.
 - `run-sql <file>` lets you run the commands in a given SQL file. It does environment variable substitution, substituting the value of the `MY_ENV` variable into any `${MY_ENV}` references in the given SQL.
 - `run-sql-cmd <CMD>` lets you run a single SQL command.
-- `webapi-reload-sources` reloads the sources defined in WebAPI by reading creating source entries from each CSV record in `data/sources.csv`. Records have the following columns: unique numeric source ID, name, CDM schema, results schema.
 
 ### Other operations
 

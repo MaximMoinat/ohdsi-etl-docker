@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+
+if [ $# != 1 ]; then
+  echo "Usage: $0 <database>"
+  exit 1
+fi
+
+. .env
+
+exec docker-compose exec postgresql pg_dump -F custom  -h localhost -U postgres "$@" ohdsi | gzip -c > data/etl.dump.gz
+
