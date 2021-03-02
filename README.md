@@ -29,7 +29,7 @@ Jupyterhub will be available on port 8080, with any user name and password `JUPY
 To *run your ETL*, specify the ETL docker image in `.env` in the `ETL_IMAGE` variable. Then run
 
 ```
-bin/run-etl [etl docker image params]
+bin/run-etl <command> <param1> <param2>
 ```
 
 Additional `docker-compose` options can be provided by setting the `DOCKER_COMPOSE_OPTS` environment variable.
