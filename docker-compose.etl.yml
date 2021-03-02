@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  etl:
+    image: ${ETL_IMAGE}
+    depends_on:
+      - postgresql
+    environment:
+      - DB_URI=postgresql://postgres:${POSTGRESQL_PASSWORD}@postgresql/ohdsi
+      - VOCAB_SCHEMA=vocab
+      - CDM_SCHEMA=cdm5
+      - RES_SCHEMA=cdm5
+    volumes:
+      - "./data/etl:/data/etl"
+      - "./data/vocabulary:/data/vocabulary"
